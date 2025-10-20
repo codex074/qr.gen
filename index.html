@@ -5,22 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR Code Generator</title>
 
-  <!-- TailwindCSS -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- QR Code Library -->
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
 
-  <!-- Manifest for PWA -->
+  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#8b5cf6" />
 
-  <!-- iOS support -->
+  <!-- iOS PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="QR Generator" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <meta name="apple-mobile-web-app-title" content="QRGen" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
 
   <style>
     body { font-family: 'Sarabun', sans-serif; }
@@ -33,6 +34,7 @@
 </head>
 <body class="bg-gradient-to-br from-indigo-300 via-purple-300 to-pink-300 min-h-screen flex items-center justify-center p-4">
 
+  <!-- Card -->
   <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-md text-center">
     <h1 class="text-3xl font-bold text-indigo-700 mb-2">QR Code Generator</h1>
     <p class="text-gray-600 mb-6">สร้างและบันทึก QR Code ได้ในคลิกเดียว 💫</p>
@@ -147,10 +149,11 @@
       showButtons(false);
     });
 
-    // PWA registration
+    // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker
+          .register('./service-worker.js')
           .then(() => console.log('✅ Service Worker registered'))
           .catch(err => console.error('SW registration failed:', err));
       });
