@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qrgen-v3'; // เปลี่ยนเลขเวอร์ชันเพื่อให้ Browser รู้ว่ามีไฟล์ใหม่
+const CACHE_NAME = 'qrgen-v4'; // อัปเดตเวอร์ชันเป็น v4
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
