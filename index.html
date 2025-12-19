@@ -18,7 +18,7 @@
 
   <style>
     body { font-family: 'Sarabun', sans-serif; }
-    #downloadBtn, #copyBtn, #clearBtn {
+    #downloadBtn, #copyBtn, #clearBtn, #scanClearBtn {
       transform: scale(0);
       transition: transform 0.25s ease-out;
     }
@@ -69,9 +69,18 @@
       <h1 class="text-2xl font-bold text-indigo-700 mb-2">สแกน QR Code</h1>
       <p class="text-gray-600 mb-6 text-sm">ใช้กล้องหรือเลือกรูปภาพเพื่อสแกน 📸</p>
 
-      <div id="readerWrapper" class="relative overflow-hidden rounded-lg bg-black w-full max-w-[300px] mx-auto min-h-[250px] mb-6 border-2 border-gray-300 flex items-center justify-center">
+      <div id="readerWrapper" class="relative overflow-hidden rounded-lg bg-black w-full max-w-[300px] mx-auto min-h-[250px] mb-4 border-2 border-gray-300 flex items-center justify-center">
         <div id="reader" class="w-full h-full"></div>
         <div id="readerPlaceholder" class="absolute text-gray-400 text-sm">ยังไม่ได้เปิดกล้อง</div>
+      </div>
+
+      <div id="scanResultContainer" class="hidden mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-left">
+        <p class="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">ผลการสแกนล่าสุด:</p>
+        <p id="scanResultText" class="text-gray-800 font-medium break-all text-sm mb-2"></p>
+        <div class="flex gap-2">
+            <button id="miniCopyBtn" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-bold">📋 คัดลอก</button>
+            <a id="miniOpenLinkBtn" href="#" target="_blank" class="hidden text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200 font-bold">🔗 เปิดลิงก์</a>
+        </div>
       </div>
 
       <div class="flex flex-col gap-3">
@@ -83,11 +92,16 @@
           ⏹ ปิดกล้อง
         </button>
 
-        <div class="relative">
-          <input type="file" id="qrInputFile" accept="image/*" class="hidden" />
-          <button id="uploadScanBtn" class="bg-white border-2 border-indigo-200 text-indigo-600 font-semibold py-3 px-6 rounded-lg hover:bg-indigo-50 transition-colors w-full flex items-center justify-center gap-2">
-            🖼 เลือกรูปภาพ
-          </button>
+        <div class="flex gap-2">
+            <div class="relative w-full">
+                <input type="file" id="qrInputFile" accept="image/*" class="hidden" />
+                <button id="uploadScanBtn" class="bg-white border-2 border-indigo-200 text-indigo-600 font-semibold py-3 px-6 rounded-lg hover:bg-indigo-50 transition-colors w-full flex items-center justify-center gap-2">
+                    🖼 เลือกรูป
+                </button>
+            </div>
+            <button id="scanClearBtn" class="w-1/3 bg-gray-400 text-white font-bold py-3 px-2 rounded-lg hover:bg-gray-500 transition-colors flex items-center justify-center">
+                ล้าง
+            </button>
         </div>
       </div>
     </div>
@@ -189,50 +203,54 @@
     const startScanBtn = document.getElementById('startScanBtn');
     const stopScanBtn = document.getElementById('stopScanBtn');
     const uploadScanBtn = document.getElementById('uploadScanBtn');
+    const scanClearBtn = document.getElementById('scanClearBtn'); // ปุ่ม Clear
     const qrInputFile = document.getElementById('qrInputFile');
     const readerPlaceholder = document.getElementById('readerPlaceholder');
+    const scanResultContainer = document.getElementById('scanResultContainer');
+    const scanResultText = document.getElementById('scanResultText');
+    const miniCopyBtn = document.getElementById('miniCopyBtn');
+    const miniOpenLinkBtn = document.getElementById('miniOpenLinkBtn');
+
     let html5QrCode;
 
-    // Helper: ตรวจสอบว่าเป็น URL หรือไม่
     const isValidUrl = (string) => {
       try { new URL(string); return true; } catch (_) { return false; }
     };
 
-    // Action เมื่อสแกนเจอ
+    const updateScanResultUI = (text) => {
+        scanResultContainer.classList.remove('hidden');
+        scanResultText.textContent = text;
+        scanClearBtn.classList.add('show'); // โชว์ปุ่ม Clear
+        
+        const isUrl = isValidUrl(text);
+        miniOpenLinkBtn.classList.toggle('hidden', !isUrl);
+        if(isUrl) miniOpenLinkBtn.href = text;
+    };
+
     const onScanSuccess = (decodedText, decodedResult) => {
-      stopCamera(); // หยุดกล้องทันที
-      
+      stopCamera();
+      updateScanResultUI(decodedText); // อัปเดต UI หน้าจอ
+
+      // เรียก SweetAlert
       const isUrl = isValidUrl(decodedText);
-      
-      // เรียกใช้ SweetAlert2
       Swal.fire({
         title: '🎉 สแกนสำเร็จ!',
         text: decodedText,
         icon: 'success',
         showCancelButton: true,
-        showDenyButton: isUrl, // แสดงปุ่มที่ 3 (Open Link) เฉพาะถ้าเป็น URL
-        
-        // Config ปุ่ม
+        showDenyButton: isUrl,
         confirmButtonText: '📋 คัดลอก',
-        confirmButtonColor: '#10b981', // สีเขียว
-        
+        confirmButtonColor: '#10b981',
         denyButtonText: '🔗 เปิดลิงก์',
-        denyButtonColor: '#4f46e5', // สี Indigo
-        
+        denyButtonColor: '#4f46e5',
         cancelButtonText: 'ปิด',
         reverseButtons: true
       }).then((result) => {
-        
         if (result.isConfirmed) {
-          // กดปุ่ม คัดลอก
           navigator.clipboard.writeText(decodedText).then(() => {
-            Swal.fire({
-              icon: 'success', title: 'คัดลอกเรียบร้อย!',
-              toast: true, position: 'top-end', showConfirmButton: false, timer: 1500
-            });
+            Swal.fire({ icon: 'success', title: 'คัดลอกเรียบร้อย!', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
           });
         } else if (result.isDenied) {
-          // กดปุ่ม เปิดลิงก์ (เฉพาะ URL)
           window.open(decodedText, '_blank');
         }
       });
@@ -240,6 +258,7 @@
 
     const startCamera = () => {
       readerPlaceholder.classList.add('hidden');
+      scanResultContainer.classList.add('hidden'); // ซ่อนผลลัพธ์เก่าตอนเริ่มสแกนใหม่
       html5QrCode = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 250 } };
       
@@ -265,10 +284,26 @@
       }
     };
 
+    // Events สำหรับ Scanner
     startScanBtn.addEventListener('click', startCamera);
     stopScanBtn.addEventListener('click', stopCamera);
     uploadScanBtn.addEventListener('click', () => qrInputFile.click());
     
+    // Logic ปุ่ม Clear Scan
+    scanClearBtn.addEventListener('click', () => {
+        scanResultContainer.classList.add('hidden');
+        scanResultText.textContent = '';
+        qrInputFile.value = ''; // Reset file input
+        scanClearBtn.classList.remove('show'); // ซ่อนปุ่ม Clear
+    });
+
+    // Logic ปุ่ม Mini Copy/Open ในหน้าจอ
+    miniCopyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(scanResultText.textContent);
+        miniCopyBtn.textContent = '✅ คัดลอกแล้ว';
+        setTimeout(() => miniCopyBtn.textContent = '📋 คัดลอก', 1500);
+    });
+
     qrInputFile.addEventListener('change', e => {
       if (e.target.files.length == 0) return;
       const imageFile = e.target.files[0];
