@@ -1,11 +1,11 @@
-const CACHE_NAME = 'qrgen-v2'; // อัปเดตเวอร์ชัน
+const CACHE_NAME = 'qrgen-v3'; // เปลี่ยนเลขเวอร์ชันเพื่อให้ Browser รู้ว่ามีไฟล์ใหม่
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192x192.png',
   './icons/icon-512x512.png',
-  // ต้อง Cache ไลบรารีภายนอกด้วยเพื่อให้ทำงาน Offline ได้
+  // External Libraries
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js',
   'https://unpkg.com/html5-qrcode',
@@ -13,7 +13,7 @@ const ASSETS_TO_CACHE = [
   'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap'
 ];
 
-// Install Event: เก็บไฟล์ลง Cache
+// Install Event
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -23,7 +23,7 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate Event: ลบ Cache เวอร์ชันเก่าทิ้ง
+// Activate Event (Cleanup old cache)
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(cacheNames => {
@@ -37,18 +37,14 @@ self.addEventListener('activate', e => {
       );
     })
   );
+  return self.clients.claim();
 });
 
-// Fetch Event: ดึงข้อมูลจาก Cache ก่อน ถ้าไม่มีค่อยโหลดจากเน็ต
+// Fetch Event
 self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(response => {
-      if (response) {
-        return response;
-      }
-      return fetch(e.request).catch(() => {
-        // กรณี Offline และหาไฟล์ไม่เจอ อาจจะ return หน้า offline.html (ถ้ามี)
-      });
+      return response || fetch(e.request);
     })
   );
 });
